@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Planetary Echo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(to bottom, #1a0033, #4b004b);
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: white;
+            transition: background-size 0.5s ease;
+        }
+        body:hover {
+            background-size: 110% 110%;
+        }
+        body:not(:hover) {
+            background-size: 100% 100%;
+        }
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            background: #ffffff;
+            border-radius: 50%;
+            z-index: -1;
+        }
+        body::before { top: 10%; left: 5%; width: 2px; height: 2px; }
+        body::after { top: 80%; left: 90%; width: 4px; height: 4px; }
+        body::after { content: ''; position: absolute; background: #ffffff; border-radius: 50%; z-index: -1; width: 3px; height: 3px; top: 30%; left: 15%; }
+        body::before { content: ''; position: absolute; background: #ffffff; border-radius: 50%; z-index: -1; width: 1px; height: 1px; top: 50%; left: 70%; }
+        body::after { content: ''; position: absolute; background: #ffffff; border-radius: 50%; z-index: -1; width: 5px; height: 5px; top: 20%; left: 85%; }
+        body::before { content: ''; position: absolute; background: #ffffff; border-radius: 50%; z-index: -1; width: 2px; height: 2px; top: 70%; left: 10%; }
+        body::after { content: ''; position: absolute; background: #ffffff; border-radius: 50%; z-index: -1; width: 3px; height: 3px; top: 40%; left: 25%; }
+        body::before { content: ''; position: absolute; background: #ffffff; border-radius: 50%; z-index: -1; width: 4px; height: 4px; top: 60%; left: 95%; }
+        body::after { content: ''; position: absolute; background: #ffffff; border-radius: 50%; z-index: -1; width: 1px; height: 1px; top: 15%; left: 60%; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto 100px auto;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(75, 0, 75, 0.5);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #ffffff;
+            transition: background 3s ease, opacity 0.3s;
+            margin: 0 5px;
+            box-shadow: 0 0 20px rgba(75, 0, 75, 0.5);
+        }
+        button:disabled {
+            background: #808080;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        #vl-button {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(75, 0, 75, 0.5);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 3s ease, opacity 0.3s;
+        }
+        #vl-button:hover {
+            background: #e0e0e0;
+        }
+        #result {
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 400px;
+            max-height: 400px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .you-got {
+            font-size: 24px;
+            animation: fadeIn 1s ease-in;
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+        .pull-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 60px;
+        }
+        .pull-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin: 5px 0;
+        }
+        .item-name {
+            display: inline-block;
+            margin: 0 10px;
+            animation: slideUp 1s ease-in 2s forwards;
+            opacity: 0;
+        }
+        .item-name .rarity { font-weight: bold; }
+        .item-name .type { font-weight: normal; }
+        #debug-arrow {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 15px solid #fff;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        #debug-arrow:hover { transform: translateX(-50%) translateY(5px); }
+        #debug-menu {
+            position: fixed;
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            width: 200px;
+            text-align: left;
+            transition: top 0.3s ease;
+            z-index: 10;
+        }
+        #debug-menu.active { top: 30px; }
+        #debug-menu input[type="text"] {
+            margin: 5px 0;
+            padding: 5px;
+            width: 120px;
+        }
+        #table-arrow {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 15px solid #fff;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        #table-arrow:hover { transform: translateX(-50%) translateY(-5px); }
+        #table-menu {
+            position: fixed;
+            bottom: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            width: 200px;
+            text-align: center;
+            transition: bottom 0.3s ease;
+            z-index: 10;
+            overflow-y: auto;
+            max-height: 300px;
+            display: none;
+        }
+        #table-menu.active {
+            bottom: 40px;
+            display: block;
+        }
+        #table-menu table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        #table-menu th, #table-menu td {
+            border: 1px solid #fff;
+            padding: 5px;
+        }
+        #table-menu th {
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+        #table-menu td { vertical-align: middle; }
+        .rarity-gamma { color: lightblue; }
+        .rarity-beta { color: white; background: linear-gradient(to right, purple, darkblue); padding: 2px 5px; border-radius: 3px; }
+        .rarity-alpha { color: black; background: linear-gradient(to right, orange, yellow); text-shadow: 0 0 5px white; padding: 2px 5px; border-radius: 3px; }
+        .rarity-zeta { color: white; background: linear-gradient(to right, black, red); text-shadow: 0 0 5px white; padding: 2px 5px; border-radius: 3px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        #pity {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            line-height: 1.5em;
+        }
+        #pity span.rarity-gamma { color: lightblue; }
+        #pity span.rarity-beta { background: linear-gradient(to right, purple, darkblue); color: white; padding: 2px 5px; border-radius: 3px; }
+        #pity span.rarity-alpha { background: linear-gradient(to right, orange, yellow); color: black; text-shadow: 0 0 5px white; padding: 2px 5px; border-radius: 3px; }
+        #pity span.rarity-zeta { background: linear-gradient(to right, black, red); color: white; text-shadow: 0 0 5px white; padding: 2px 5px; border-radius: 3px; }
+        #pity #pity-title { font-size: 1.2em; margin-bottom: 5px; }
+        #pity .count { color: white; }
+        #inventory {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            line-height: 1.5em;
+        }
+        #inventory ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        #inventory li { margin: 5px 0; }
+        .shiny { text-shadow: 0 0 5px white; }
+        .item-type-item { color: green; }
+        .item-type-weapon { color: pink; }
+        .item-type-character { color: yellow; }
+        .item-type-potion { color: orange; }
+        #points-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            z-index: 10;
+        }
+        #points-counter .dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            margin-left: 5px;
+            position: relative;
+            cursor: default;
+        }
+        #points-counter .dot:hover::after {
+            content: 'Points for pulling';
+            position: absolute;
+            bottom: -40px;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 10px;
+            white-space: nowrap;
+            animation: fadeIn 0.2s ease-in forwards;
+        }
+        #points-counter .dot:hover::before {
+            content: '';
+            position: absolute;
+            bottom: -25px;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+            animation: fadeIn 0.2s ease-in forwards;
+        }
+        #not-enough-vl {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+            color: white;
+            display: none;
+            z-index: 20;
+            animation: fadeIn 0.5s ease-in;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Planetary Echo</h1>
+        <p>Click to pull for random items with rarities and pity system.</p>
+        <button id="pull1xButton" onclick="pull(1)">1x Pull (160 VL)</button>
+        <button id="pull10xButton" onclick="pull(10)">10x Pull (1200 VL)</button>
+        <div id="result"></div>
+    </div>
+    <div id="pity">
+        <div id="pity-title">Pity Counters</div>
+        <span><span id="beta_pity" class="rarity-beta">Beta</span>: <span class="count"></span> left 'till guaranteed</span><br>
+        <span><span id="alpha_pity" class="rarity-alpha">Alpha</span>: <span class="count"></span> left 'till guaranteed</span><br>
+        <span><span id="zeta_pity" class="rarity-zeta">Zeta</span>: <span class="count"></span> left 'till guaranteed</span>
+    </div>
+    <div id="inventory">
+        <h2>Inventory</h2><ul></ul>
+    </div>
+    <div id="points-counter">
+        <span id="points">0</span>
+        <div class="dot" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)"></div>
+    </div>
+    <div id="not-enough-vl"></div>
+    <button id="vl-button" onclick="addVL()">+1</button>
+    <div id="debug-arrow" onclick="toggleDebugMenu()"></div>
+    <div id="debug-menu">
+        <input type="text" id="specificItem" placeholder="e.g., GAMMA item">
+        <button onclick="giveSpecificItem()">Give Item</button>
+    </div>
+    <div id="table-arrow" onclick="toggleTableMenu()"></div>
+    <div id="table-menu">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rarity</th>
+                    <th>Item Type</th>
+                    <th>Base Probability</th>
+                    <th>Total Probability</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td rowspan="2"><span class="rarity-gamma">Gamma</span></td><td>Item</td><td rowspan="2">84%</td><td>67.2%</td></tr>
+                <tr><td>Potion</td><td>16.8%</td></tr>
+                <tr><td rowspan="4"><span class="rarity-beta">Beta</span></td><td>Item</td><td rowspan="4">15%</td><td>3.75%</td></tr>
+                <tr><td>Potion</td><td>3.75%</td></tr>
+                <tr><td>Character</td><td>3.75%</td></tr>
+                <tr><td>Weapon</td><td>3.75%</td></tr>
+                <tr><td rowspan="4"><span class="rarity-alpha">Alpha</span></td><td>Item</td><td rowspan="4">0.1%</td><td>0.025%</td></tr>
+                <tr><td>Potion</td><td>0.025%</td></tr>
+                <tr><td>Character</td><td>0.025%</td></tr>
+                <tr><td>Weapon</td><td>0.025%</td></tr>
+                <tr><td rowspan="4"><span class="rarity-zeta">Zeta</span></td><td>Character</td><td rowspan="4">0.01%</td><td>0.0025%</td></tr>
+                <tr><td>Weapon</td><td>0.0025%</td></tr>
+                <tr><td>Potion</td><td>0.0025%</td></tr>
+                <tr><td>Item</td><td>0.0025%</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let beta_pity = 0;
+        let alpha_pity = 0;
+        let zeta_pity = 0;
+        let gamma_pity = 0;
+        let inventory = [];
+        let isCooldown = false;
+        let noCooldown = false;
+        let autoPull = false;
+        let autoPullInterval = null;
+        let voidLuminance = 0;
+
+        function getStyle(rarity) {
+            let baseStyle = 'padding: 5px; border-radius: 5px;';
+            if (rarity === 'gamma') return baseStyle + 'color: lightblue;';
+            else if (rarity === 'beta') return baseStyle + 'background: linear-gradient(to right, purple, darkblue); color: white;';
+            else if (rarity === 'alpha') return baseStyle + 'background: linear-gradient(to right, orange, yellow); color: black; text-shadow: 0 0 5px white;';
+            else if (rarity === 'zeta') return baseStyle + 'background: linear-gradient(to right, black, red); color: white; text-shadow: 0 0 5px white;';
+            return '';
+        }
+
+        function getItemType(rarity) {
+            if (rarity === 'gamma') return Math.random() < 0.8 ? 'item' : 'potion';
+            else if (rarity === 'beta') {
+                const rand = Math.random();
+                return rand < 0.25 ? 'item' : rand < 0.50 ? 'potion' : rand < 0.75 ? 'character' : 'weapon';
+            } else if (rarity === 'alpha') {
+                const rand = Math.random();
+                return rand < 0.25 ? 'item' : rand < 0.50 ? 'potion' : rand < 0.75 ? 'character' : 'weapon';
+            } else if (rarity === 'zeta') {
+                const rand = Math.random();
+                return rand < 0.25 ? 'character' : rand < 0.50 ? 'weapon' : rand < 0.75 ? 'potion' : 'item';
+            }
+            return 'item';
+        }
+
+        function pull(count) {
+            const cost = count === 1 ? 160 : 1200;
+            if (isCooldown && !noCooldown) return;
+            if (voidLuminance < cost) {
+                const shortfall = cost - voidLuminance;
+                document.getElementById('not-enough-vl').textContent = `Not Enough VL! You're ${shortfall}VL Short!`;
+                document.getElementById('not-enough-vl').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('not-enough-vl').style.display = 'none';
+                }, 2000);
+                return;
+            }
+
+            isCooldown = true;
+            const pull1xButton = document.getElementById('pull1xButton');
+            const pull10xButton = document.getElementById('pull10xButton');
+            pull1xButton.disabled = true;
+            pull10xButton.disabled = true;
+            pull1xButton.classList.add('cooldown');
+            pull10xButton.classList.add('cooldown');
+            const cooldownTime = noCooldown ? 0 : 3000;
+            setTimeout(() => {
+                isCooldown = false;
+                pull1xButton.disabled = false;
+                pull10xButton.disabled = false;
+                pull1xButton.classList.remove('cooldown');
+                pull10xButton.classList.remove('cooldown');
+            }, cooldownTime);
+
+            voidLuminance -= cost;
+            document.getElementById('points').textContent = voidLuminance;
+
+            let results = [];
+            for (let i = 0; i < count; i++) {
+                beta_pity++;
+                alpha_pity++;
+                zeta_pity++;
+
+                let rarity = null;
+                let isGuarantee = false;
+
+                if (zeta_pity >= 500) { rarity = 'zeta'; isGuarantee = true; }
+                else if (Math.random() < 0.0001) { rarity = 'zeta'; isGuarantee = false; }
+                else if (alpha_pity >= 100) { rarity = 'alpha'; isGuarantee = true; }
+                else if (Math.random() < 0.001) { rarity = 'alpha'; isGuarantee = false; }
+                else if (beta_pity >= 10) { rarity = 'beta'; isGuarantee = true; }
+                else if (Math.random() < 0.15) { rarity = 'beta'; isGuarantee = false; }
+                else { rarity = 'gamma'; }
+
+                if (rarity === 'zeta' && isGuarantee) zeta_pity = 0;
+                else if (rarity === 'alpha' && isGuarantee) alpha_pity = 0;
+                else if (rarity === 'beta' && isGuarantee) beta_pity = 0;
+
+                let itemType = getItemType(rarity);
+                let item = `${rarity} ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}`;
+
+                inventory.push({ rarity, item });
+                results.push({ rarity, item, itemType });
+            }
+
+            let resultHtml = '<span class="you-got">YOU GOT:</span>';
+            if (count === 10) {
+                const grid = [[results[0], results[1]], [results[2], results[3], results[4]], [results[5], results[6], results[7]], [results[8], results[9]]];
+                resultHtml += '<div class="pull-grid">';
+                grid.forEach(row => {
+                    resultHtml += '<div class="pull-row">';
+                    row.forEach(result => {
+                        resultHtml += `<span class="item-name"><span class="rarity-${result.rarity} rarity">${result.rarity.toUpperCase()}</span> <span class="item-type-${result.itemType} type">${result.itemType}</span></span>`;
+                    });
+                    resultHtml += '</div>';
+                });
+                resultHtml += '</div>';
+            } else {
+                const result = results[0];
+                resultHtml += `<span class="item-name"><span class="rarity-${result.rarity} rarity">${result.rarity.toUpperCase()}</span> <span class="item-type-${result.itemType} type">${result.itemType}</span></span>`;
+            }
+            document.getElementById('result').innerHTML = resultHtml;
+
+            updateInventory();
+            updatePity();
+        }
+
+        function updateInventory() {
+            const itemCounts = {};
+            inventory.forEach(({ rarity, item }) => itemCounts[item] = (itemCounts[item] || 0) + 1);
+
+            let sortedItems = Object.entries(itemCounts).map(([item, count]) => {
+                const rarity = item.split(' ')[0].toLowerCase();
+                return { rarity, item, count };
+            }).sort((a, b) => {
+                const rarityOrder = { gamma: 0, beta: 1, alpha: 2, zeta: 3 };
+                return rarityOrder[a.rarity] - rarityOrder[b.rarity] || a.item.localeCompare(b.item);
+            });
+
+            let list = '<ul>';
+            sortedItems.forEach(({ item, count }) => {
+                const rarity = item.split(' ')[0].toLowerCase();
+                const typeMatch = item.match(/(item|potion|weapon|character)$/i);
+                const type = typeMatch ? typeMatch[0].toLowerCase() : 'item';
+                const coloredItem = `<span style="${getStyle(rarity)}">${rarity.toUpperCase()}</span> <span class="item-type-${type}">${type}</span>`;
+                list += `<li>${coloredItem} x${count}</li>`;
+            });
+            list += '</ul>';
+            document.getElementById('inventory').innerHTML = `<h2>Inventory</h2>${list}`;
+        }
+
+        function updatePity() {
+            document.getElementById('beta_pity').nextElementSibling.textContent = 10 - beta_pity;
+            document.getElementById('alpha_pity').nextElementSibling.textContent = 100 - alpha_pity;
+            document.getElementById('zeta_pity').nextElementSibling.textContent = 500 - zeta_pity;
+        }
+
+        function giveSpecificItem() {
+            const input = document.getElementById('specificItem').value.trim();
+            if (input) {
+                const [rarity, type] = input.toLowerCase().split(/\s+/);
+                if (['gamma', 'beta', 'alpha', 'zeta'].includes(rarity) && ['item', 'potion', 'weapon', 'character'].includes(type)) {
+                    const item = `${rarity} ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+                    inventory.push({ rarity, item });
+                    updateInventory();
+                }
+                document.getElementById('specificItem').value = '';
+            }
+        }
+
+        function addVL() {
+            voidLuminance += 1;
+            document.getElementById('points').textContent = voidLuminance;
+        }
+
+        function toggleDebugMenu() {
+            document.getElementById('debug-menu').classList.toggle('active');
+        }
+
+        function toggleTableMenu() {
+            document.getElementById('table-menu').classList.toggle('active');
+        }
+
+        function showTooltip(element) {
+            let timeout = setTimeout(() => {
+                element.classList.add('hovered');
+            }, 2000);
+            element.dataset.timeout = timeout;
+        }
+
+        function hideTooltip(element) {
+            clearTimeout(element.dataset.timeout);
+            element.classList.remove('hovered');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === '.') toggleDebugMenu();
+            if (e.ctrlKey && e.shiftKey && e.key === ',') toggleTableMenu();
+        });
+
+        updatePity();
+    </script>
+</body>
+</html>
